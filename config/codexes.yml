@@ -49,7 +49,7 @@ codexes:
     config:
       # Get your API key from https://console.groq.com/
       api_key: "${GROQ_API_KEY}"
-      model: "llama-3.3-70b-versatile"
+      model: "moonshotai/kimi-k2-instruct-0905"
       cooldown_seconds: 1.5
 
   # =========================================================================

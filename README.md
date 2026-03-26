@@ -280,3 +280,4 @@ Treat that write-up as **historical benchmark context**, not as the entire ident
 ## Similar projects
 - https://autocodebench.github.io
 - https://livecodebench.github.io
+- > **SPEC Update:** If the user enters a non-numeric value for the amount, the system must print "Error: Amount must be a valid number" to prevent a crash.

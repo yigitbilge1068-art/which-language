@@ -153,6 +153,9 @@ def load_results(path, codex=None):
             "v2_output_tokens": v2m.get("output_tokens", 0),
             "v1_cache_read": v1m.get("cache_read_tokens", 0),
             "v2_cache_read": v2m.get("cache_read_tokens", 0),
+            "v1_tps": v1m.get("output_tokens", 0) / r.get("v1_time", 1) if r.get("v1_time", 0) > 0 else 0,
+            "v2_tps": v2m.get("output_tokens", 0) / r.get("v2_time", 1) if r.get("v2_time", 0) > 0 else 0,
+            "total_tps": (v1m.get("output_tokens", 0) + v2m.get("output_tokens", 0)) / (r.get("v1_time", 0) + r.get("v2_time", 0)) if (r.get("v1_time", 0) + r.get("v2_time", 0)) > 0 else 0,
         })
 
     return pd.DataFrame(rows)
@@ -339,12 +342,12 @@ def main():
 
     fig, ax = plt.subplots(figsize=(10, 5))
     boxdot(ax, df, "total_time", ylabel="Time (s)",
-           title=plot_title(args.codex, "Time to Generate MiniGit (v1+v2)"), clip=300)
+           title=plot_title(args.codex, "Time to Generate (v1+v2)"), clip=300)
     save(fig, args.outdir, "total_time")
 
     fig, ax = plt.subplots(figsize=(10, 5))
     boxdot(ax, df, "total_cost", ylabel="Cost (USD)",
-           title=plot_title(args.codex, "Cost to Generate MiniGit (v1+v2)"), clip=False)
+           title=plot_title(args.codex, "Cost to Generate (v1+v2)"), clip=False)
     ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("$%.2f"))
     save(fig, args.outdir, "total_cost")
 
@@ -358,12 +361,12 @@ def main():
 
     fig, ax = plt.subplots(figsize=(10, 5))
     boxdot(ax, df, "v1_time", ylabel="Time (s)",
-           title=plot_title(args.codex, "Time to Generate MiniGit v1"), clip=200)
+           title=plot_title(args.codex, "Time to Generate v1"), clip=200)
     save(fig, args.outdir, "v1_time")
 
     fig, ax = plt.subplots(figsize=(10, 5))
     boxdot(ax, df, "v1_cost", ylabel="Cost (USD)",
-           title=plot_title(args.codex, "Cost to Generate MiniGit v1"), clip=False)
+           title=plot_title(args.codex, "Cost to Generate v1"), clip=False)
     ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("$%.2f"))
     save(fig, args.outdir, "v1_cost")
 
@@ -377,12 +380,12 @@ def main():
 
     fig, ax = plt.subplots(figsize=(10, 5))
     boxdot(ax, df, "v2_time", ylabel="Time (s)",
-           title=plot_title(args.codex, "Time to Generate MiniGit v2"), clip=150)
+           title=plot_title(args.codex, "Time to Generate v2"), clip=150)
     save(fig, args.outdir, "v2_time")
 
     fig, ax = plt.subplots(figsize=(10, 5))
     boxdot(ax, df, "v2_cost", ylabel="Cost (USD)",
-           title=plot_title(args.codex, "Cost to Generate MiniGit v2"), clip=False)
+           title=plot_title(args.codex, "Cost to Generate v2"), clip=False)
     ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("$%.2f"))
     save(fig, args.outdir, "v2_cost")
 
@@ -396,26 +399,44 @@ def main():
 
     fig, ax = plt.subplots(figsize=(10, 5))
     boxdot(ax, df, "v1_turns", ylabel="Turns",
-           title=plot_title(args.codex, "Agent Turns for MiniGit v1"), clip=25)
+           title=plot_title(args.codex, "Agent Turns (v1)"), clip=25)
     save(fig, args.outdir, "v1_turns")
 
     fig, ax = plt.subplots(figsize=(10, 5))
     boxdot(ax, df, "v2_turns", ylabel="Turns",
-           title=plot_title(args.codex, "Agent Turns for MiniGit v2"), clip=25)
+           title=plot_title(args.codex, "Agent Turns (v2)"), clip=25)
     save(fig, args.outdir, "v2_turns")
 
     fig, ax = plt.subplots(figsize=(10, 5))
     boxdot(ax, df, "total_turns", ylabel="Turns",
-           title=plot_title(args.codex, "Agent Turns for MiniGit (v1+v2)"), clip=45)
+           title=plot_title(args.codex, "Agent Turns (v1+v2)"), clip=45)
     save(fig, args.outdir, "total_turns")
+
+    # ── TPS ───────────────────────────────────────────────────────────────
+    print("Generating Tokens Per Second (TPS) plots …")
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    boxdot(ax, df, "v1_tps", ylabel="Tokens Per Second",
+           title=plot_title(args.codex, "Tokens Per Second (v1)"), clip=150)
+    save(fig, args.outdir, "v1_tps")
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    boxdot(ax, df, "v2_tps", ylabel="Tokens Per Second",
+           title=plot_title(args.codex, "Tokens Per Second (v2)"), clip=150)
+    save(fig, args.outdir, "v2_tps")
+    
+    fig, ax = plt.subplots(figsize=(10, 5))
+    boxdot(ax, df, "total_tps", ylabel="Tokens Per Second",
+           title=plot_title(args.codex, "Tokens Per Second (v1+v2)"), clip=150)
+    save(fig, args.outdir, "total_tps")
 
     # ── Scatter: Time vs Cost ─────────────────────────────────────────────
     print("Generating scatter plots …")
 
     for time_col, cost_col, suffix, title in [
-        ("total_time", "total_cost", "total", "Time vs Cost for MiniGit (v1+v2)"),
-        ("v1_time", "v1_cost", "v1", "Time vs Cost for MiniGit v1"),
-        ("v2_time", "v2_cost", "v2", "Time vs Cost for MiniGit v2"),
+        ("total_time", "total_cost", "total", "Time vs Cost (v1+v2)"),
+        ("v1_time", "v1_cost", "v1", "Time vs Cost v1"),
+        ("v2_time", "v2_cost", "v2", "Time vs Cost v2"),
     ]:
         fig, ax = plt.subplots(figsize=(8, 6))
         for lang in LANG_ORDER:
@@ -448,9 +469,9 @@ def main():
     print("Generating time vs LOC scatter plots …")
 
     for time_col, loc_col, suffix, title in [
-        ("total_time", "v2_loc", "total", "Time vs LOC for MiniGit (v1+v2)"),
-        ("v1_time", "v1_loc", "v1", "Time vs LOC for MiniGit v1"),
-        ("v2_time", "v2_loc", "v2", "Time vs LOC for MiniGit v2"),
+        ("total_time", "v2_loc", "total", "Time vs LOC (v1+v2)"),
+        ("v1_time", "v1_loc", "v1", "Time vs LOC v1"),
+        ("v2_time", "v2_loc", "v2", "Time vs LOC v2"),
     ]:
         fig, ax = plt.subplots(figsize=(8, 6))
         for lang in LANG_ORDER:

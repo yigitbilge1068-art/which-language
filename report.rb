@@ -129,8 +129,8 @@ report << ''
 
 # --- RESULTS SUMMARY ---
 report << '## Results Summary'
-report << '| Language | v1 Time | v1 Turns | v1 LOC | v1 Tests | v2 Time | v2 Turns | v2 LOC | v2 Tests | Total Time | Avg Cost |'
-report << '|----------|---------|----------|--------|----------|---------|----------|--------|----------|------------|----------|'
+report << '| Language | v1 Time | v1 Turns | v1 LOC | v1 Tests | v2 Time | v2 Turns | v2 LOC | v2 Tests | Total Time | Avg Cost | Avg TPS |'
+report << '|----------|---------|----------|--------|----------|---------|----------|--------|----------|------------|----------|---------|'
 
 languages.each do |lang|
   lr = results.select { |r| r['language'] == lang }
@@ -163,6 +163,9 @@ languages.each do |lang|
   total_cost = lr.sum { |r| %w[v1 v2].sum { |ph| metric_field(r, ph, 'cost_usd') } }
   avg_cost = total_cost / n
 
+  total_output = lr.sum { |r| %w[v1 v2].sum { |ph| metric_field(r, ph, 'output_tokens') } }
+  avg_tps = total_times.sum > 0 ? (total_output / total_times.sum.to_f).round(1) : 0
+
   report << "| #{lang.capitalize} " \
             "| #{v1_avg}s\u00B1#{v1_sd}s " \
             "| #{v1_turns} " \
@@ -173,14 +176,15 @@ languages.each do |lang|
             "| #{v2_loc} " \
             "| #{v2_tests} " \
             "| #{total_avg}s\u00B1#{total_sd}s " \
-            "| $#{'%.2f' % avg_cost} |"
+            "| $#{'%.2f' % avg_cost} " \
+            "| #{avg_tps} |"
 end
 report << ''
 
 # --- TOKEN SUMMARY ---
 report << '## Token Summary'
-report << '| Language | Avg Input | Avg Output | Avg Cache Create | Avg Cache Read | Avg Total | Avg Cost |'
-report << '|----------|-----------|------------|------------------|----------------|-----------|----------|'
+report << '| Language | Avg Input | Avg Output | Avg Cache Create | Avg Cache Read | Avg Total | Avg Cost | Avg TPS |'
+report << '|----------|-----------|------------|------------------|----------------|-----------|----------|---------|'
 
 languages.each do |lang|
   lr = results.select { |r| r['language'] == lang }
@@ -189,6 +193,7 @@ languages.each do |lang|
 
   sum_input = sum_output = sum_cache_create = sum_cache_read = 0
   sum_cost = 0.0
+  sum_time = 0.0
 
   lr.each do |r|
     %w[v1 v2].each do |ph|
@@ -197,10 +202,12 @@ languages.each do |lang|
       sum_cache_create += metric_field(r, ph, 'cache_creation_tokens')
       sum_cache_read   += metric_field(r, ph, 'cache_read_tokens')
       sum_cost         += metric_field(r, ph, 'cost_usd')
+      sum_time         += (r["#{ph}_time"] || 0)
     end
   end
 
   avg_total = ((sum_input + sum_output + sum_cache_create + sum_cache_read) / n).round(0)
+  avg_tps = sum_time > 0 ? (sum_output / sum_time.to_f).round(1) : 0
 
   report << "| #{lang.capitalize} " \
             "| #{fmt((sum_input / n).round(0))} " \
@@ -208,7 +215,8 @@ languages.each do |lang|
             "| #{fmt((sum_cache_create / n).round(0))} " \
             "| #{fmt((sum_cache_read / n).round(0))} " \
             "| #{fmt(avg_total)} " \
-            "| $#{'%.4f' % (sum_cost / n)} |"
+            "| $#{'%.4f' % (sum_cost / n)} " \
+            "| #{avg_tps} |"
 end
 report << ''
 
@@ -238,20 +246,22 @@ report << ''
 
 # --- FULL TOKENS ---
 report << '## Full Tokens'
-report << '| Codex | Language | Trial | Phase | Input | Output | Cache Create | Cache Read | Total | Cost USD |'
-report << '|-------|----------|-------|-------|-------|--------|--------------|------------|-------|----------|'
+report << '| Codex | Language | Trial | Phase | Input | Output | Cache Create | Cache Read | Total | Cost USD | TPS |'
+report << '|-------|----------|-------|-------|-------|--------|--------------|------------|-------|----------|-----|'
 
 results.each do |r|
   %w[v1 v2].each do |phase|
     metrics = phase_metrics(r, phase)
     if metrics
       tot = total_tokens(metrics)
+      time = r["#{phase}_time"] || 0
+      tps = time > 0 ? ((metrics['output_tokens'] || 0) / time.to_f).round(1) : 0
       report << "| #{record_codex(r)} | #{r['language'].capitalize} | #{r['trial']} | #{phase} " \
                 "| #{fmt(metrics['input_tokens'] || 0)} | #{fmt(metrics['output_tokens'] || 0)} " \
                 "| #{fmt(metrics['cache_creation_tokens'] || 0)} | #{fmt(metrics['cache_read_tokens'] || 0)} " \
-                "| #{fmt(tot)} | $#{'%.4f' % (metrics['cost_usd'] || 0)} |"
+                "| #{fmt(tot)} | $#{'%.4f' % (metrics['cost_usd'] || 0)} | #{tps} |"
     else
-      report << "| #{record_codex(r)} | #{r['language'].capitalize} | #{r['trial']} | #{phase} | - | - | - | - | - | - |"
+      report << "| #{record_codex(r)} | #{r['language'].capitalize} | #{r['trial']} | #{phase} | - | - | - | - | - | - | - |"
     end
   end
 end

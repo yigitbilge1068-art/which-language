@@ -1,0 +1,126 @@
+MiniLibrary Specification
+Version: 2.0
+Command name: minilibrary
+External libraries: NOT allowed
+Standard library: Allowed
+Persistent storage: Local filesystem only
+
+========================================
+1. Overview
+========================================
+
+MiniLibrary is a minimal command-line book management
+and library tracking tool.
+
+The executable must be called:
+
+    minilibrary
+
+All data must be stored in:
+
+    .minilibrary/
+
+All commands operate relative to current directory.
+
+----------------------------------------
+
+Supported commands (v1 + v2):
+
+    minilibrary init
+    minilibrary add <title> <author>
+    minilibrary list
+    minilibrary borrow <id>
+    minilibrary return <id>
+    minilibrary delete <id>
+    minilibrary request <title> <author>
+    minilibrary listrequests
+
+========================================
+2. Data Storage
+========================================
+
+After init:
+
+    .minilibrary/
+        books.dat
+        requests.dat
+
+books.dat:
+    One book per line.
+    Format: <id>|<title>|<author>|<status>|<added_date>|<borrow_date>
+
+    Status is either AVAILABLE or BORROWED.
+    borrow_date is empty when the book is not borrowed.
+
+requests.dat:
+    One request per line.
+    Format: <title>|<author>|<count>
+
+    count tracks how many times the book has been requested.
+
+========================================
+3. New Commands (v2)
+========================================
+
+All v1 commands remain unchanged. The following new
+commands are added.
+
+Note: init must now also create the requests.dat file
+(empty) in addition to books.dat.
+
+----------------------------------------
+3.1 request <title> <author>
+----------------------------------------
+
+If not initialized:
+    print "Not initialized. Run: python minilibrary.py init"
+    exit 1
+
+If the book already exists in the library (matching title and author):
+    print "Book already exists in library: <title>"
+    exit 0
+
+If the book has been requested before:
+    Increment the request count.
+    If count reaches 3:
+        Remove the request from requests.dat.
+        print "Order placed for: <title> by <author>"
+    Else:
+        Update the count in requests.dat.
+        print "Request recorded for: <title> by <author> (<count>/3)"
+
+If the book has not been requested before:
+    Add a new entry to requests.dat with count = 1.
+    print "Request recorded for: <title> by <author> (1/3)"
+
+----------------------------------------
+3.2 listrequests
+----------------------------------------
+
+If not initialized:
+    print "Not initialized. Run: python minilibrary.py init"
+    exit 1
+
+If no pending requests:
+    print "No pending requests."
+    exit 0
+
+For each request, output one line:
+    [<count>/3] <title> - <author>
+
+Lines are indented with two leading spaces.
+
+========================================
+4. Determinism Rules
+========================================
+
+- No extra spaces in output (except the two-space indent in list/listrequests)
+- No debug output
+- Exact string matching required
+- Dates in YYYY-MM-DD format
+- Borrow duration is always 14 days
+- Request threshold is always 3
+
+========================================
+END
+========================================

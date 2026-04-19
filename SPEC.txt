@@ -1,0 +1,65 @@
+PROJECT: mini-budget
+AUTHOR: Yiğit Bilge (251478059)
+VERSION: v2.0
+DATE: 2026-04-19
+
+========================================
+OVERVIEW
+========================================
+mini-budget is a command-line income and expense tracker.
+It stores transactions in a plain text file and supports
+adding, listing, and summarizing financial entries.
+
+All data is persisted in a directory called .minibudget/
+in the current working directory.
+
+[V2 UPDATE] The system is now time-aware and includes robust error 
+handling to prevent crashes during missing file scenarios.
+
+========================================
+COMMANDS
+========================================
+
+--- init ---
+Usage: python solution_v2.py init
+Creates a .minibudget/ directory and an empty ledger.dat file.
+If .minibudget/ already exists, prints "Already initialized".
+
+--- add ---
+Usage: python solution_v2.py add <type> <amount> <category>
+Valid types: INCOME, EXPENSE.
+Appends a new transaction to ledger.dat.
+Each transaction has: id (auto-increment), type, amount, category, date.
+Prints "Added transaction #<id>: <type> <amount> for <category>".
+If type is invalid, prints "Error: Type must be INCOME or EXPENSE".
+[V2 ENHANCEMENT] The 'date' field is no longer manual. It is automatically 
+generated via the system's timestamp (YYYY-MM-DD HH:MM).
+
+--- list ---
+Usage: python solution_v2.py list
+Prints all transactions.
+[V2 ENHANCEMENT] Safe execution: If the directory or file does not exist 
+yet, the program will not crash. It will safely print "No transactions found."
+
+--- summary / total ---
+Usage: python solution_v2.py total
+Calculates and prints the total income, total expense, and net balance.
+[V2 ENHANCEMENT] Strict memory constraints applied: The calculation must 
+be performed using a `while` loop mathematically reading line-by-line, 
+strictly without using arrays or lists ([]).
+
+========================================
+DATA FORMAT
+========================================
+File: .minibudget/ledger.dat
+Format: One transaction per line, fields separated by |
+Example:
+1|INCOME|500.0|Salary|2026-04-19 14:30
+
+========================================
+ERROR HANDLING
+========================================
+- Running any command before "init" or missing file: print "Not initialized." or "No transactions found."
+- Invalid command: print "Unknown command: <command>"
+- Missing arguments for add: print "Error: Provide amount and description."
+- Non-numeric amount: print "Error: Amount must be a valid number"
